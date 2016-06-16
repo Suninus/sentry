@@ -16,7 +16,7 @@
       <td class="align-right">
         <strong>Weekly Update for {{ organization.name }}</strong><br />
         {# Note: This assumes we're always sending email on day boundaries. #}
-        {{ interval.start|date:"F j, Y" }} &ndash; {{ interval.end|date:"F j, Y" }}
+        {{ report.interval.start|date:"F j, Y" }} &ndash; {{ report.interval.end|date:"F j, Y" }}
       </td>
     </tr>
   </table>
@@ -37,21 +37,20 @@
     </tr>
   </table>
 
-  {% with resolutions.comparisons as change %}
   <table class="issues-resolved">
     <tr>
       <td class="issues-resolved-column issues-resolved-column-left">
         <table class="issue-graph">
           <tr>
-          {% for date, metrics in resolutions.series.iteritems %}
+          {% for timestamp, metrics in report.statistics.series %}
             {% with metrics.total|subtract:metrics.resolved as metrics_difference %}
             <td valign="bottom" style="padding-right: 5px;">
               <table class="issue-graph-bar">
                 <tr>
-                  <td class="all" height="{% widthratio metrics_difference resolutions.total_max 56 %}px" title="{{metrics_difference}}">&nbsp;</td>
+                  <td class="all" height="{% widthratio metrics_difference report.statistics.total_max 56 %}px" title="{{metrics_difference}}">&nbsp;</td>
                 </tr>
                 <tr>
-                  <td class="resolved" height="{% widthratio metrics.resolved resolutions.total_max 56 %}px" title="{{metrics.resolved}}">&nbsp;</td>
+                  <td class="resolved" height="{% widthratio metrics.resolved report.statistics.total_max 56 %}px" title="{{metrics.resolved}}">&nbsp;</td>
                 </tr>
               </table>
             </td>
@@ -60,38 +59,43 @@
           </tr>
         </table>
       </td>
+      {% with report.statistics.history as history %}
       <td class="issues-resolved-column issues-resolved-column-middle">
         <div class="stat">
-          {% if change.weekly >= 0 %}
+          {% percent history.this_week|subtract:history.last_week history.last_week varname="change" %}
+          <!-- {{ history.this_week }} / {{ history.last_week }} -->
+          {% if change >= 0 %}
             <img src="{% absolute_asset_url 'sentry' 'images/email/arrow-increase.png' %}" width="20px" height="10px">
           {% else %}
             <img src="{% absolute_asset_url 'sentry' 'images/email/arrow-decrease.png' %}" width="20px" height="10px">
           {% endif %}
-          {{ change.weekly|absolute_value|floatformat:"0" }}%
+          {{ change|absolute_value }}%
         </div>
-        <small>{% if change.weekly >= 0 %}more{% else %}less{% endif %} than last week</small>
+        <small>{% if change >= 0 %}more{% else %}less{% endif %} than last week</small>
       </td>
       <td class="issues-resolved-column">
         <div class="stat">
-          {% if change.monthly >= 0 %}
+          {% percent history.this_week|subtract:history.month_average history.month_average varname="change" %}
+          <!-- {{ history.this_week }} / {{ history.month_average }} -->
+          {% if change >= 0 %}
             <img src="{% absolute_asset_url 'sentry' 'images/email/arrow-increase.png' %}" width="20px" height="10px">
           {% else %}
             <img src="{% absolute_asset_url 'sentry' 'images/email/arrow-decrease.png' %}" width="20px" height="10px">
           {% endif %}
-          {{ change.monthly|absolute_value|floatformat:"0" }}%
+          {{ change|absolute_value }}%
         </div>
-        <small>{% if change.monthly >= 0 %}more{% else %}less{% endif %} than last month's average</small>
+        <small>{% if change >= 0 %}more{% else %}less{% endif %} than last month</small>
       </td>
+      {% endwith %}
     </tr>
   </table>
-  {% endwith %}
 
-  {% for label, groups in group_lists.iteritems %}
+  {% for specification, issues in report.issues.items %}
     <table class="issue-table">
       <thead>
         <tr>
           <th>
-            <h4>{{ label }}</h4>
+            <h4>{{ specification.label }} ({{ issues.count }})</h4>
           </th>
           <th class="narrow-column">Events</th>
           <th class="narrow-column">Users</th>
@@ -99,7 +103,9 @@
         </tr>
       </thead>
       <tbody>
-        {% for group, statistics in groups %}
+        {% for item, score in issues.issues %}
+          {% with instances|getitem:item.reference as group %}
+          {# TODO: This should handle a missing instance here. #}
           <tr {% if group.is_resolved %}class="is-resolved"{% endif %}>
             <td>
               <h5><a href="{% absolute_uri group_link %}">{{ group }}</a></h5>
@@ -107,8 +113,8 @@
                 <a href="{% absolute_uri project_link %}" class="issue-project">{{ group.project.name }}</a>
               </div>
             </td>
-            <td class="narrow-column">{{ statistics.count }}</td>
-            <td class="narrow-column">{{ statistics.users }}</td>
+            <td class="narrow-column">{{ item.statistics.events }}</td>
+            <td class="narrow-column">{{ item.statistics.users }}</td>
             <td class="narrow-column">
               {# TODO: Perhaps figure this out on the backend? #}
               {% if group.is_resolved %}
@@ -118,6 +124,7 @@
               {% endif %}
             </td>
           </tr>
+          {% endwith %}
         {% empty %}
           <tr>
             <td class="empty" colspan="4">
@@ -136,8 +143,8 @@
       <td width="50%">
         <table>
           <tr>
-            <td class="user-impact-stat">{{ personal.resolutions }}</td>
-            <td class="user-impact-text">Issue{{ personal.resolutions|pluralize }} resolved this week by you.</td>
+            <td class="user-impact-stat">{{ personal.resolved }}</td>
+            <td class="user-impact-text">Issue{{ personal.resolved|pluralize }} resolved this week by you.</td>
           </tr>
         </table>
       </td>

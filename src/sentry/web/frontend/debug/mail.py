@@ -42,6 +42,7 @@ from sentry.utils.email import inline_css
 from sentry.utils.http import absolute_uri
 from sentry.web.decorators import login_required
 from sentry.web.helpers import render_to_response, render_to_string
+from sentry.reports.generator import generate_report
 
 
 logger = logging.getLogger(__name__)
@@ -359,97 +360,25 @@ def weekly_report(request):
     logger.debug('Using random seed value: %s')
     random = Random(seed)
 
-    # TODO: Refactor all of these into something more manageable.
-    organization  = Organization(
+    organization = Organization(
         id=1,
         slug='example',
         name='Example Organization',
     )
 
-    team = Team(
-        id=1,
-        slug='example',
-        name='Example Team',
-        organization=organization,
+    report, user_statistics, instances = generate_report(
+        organization,
+        random,
     )
-
-    project = Project(
-        id=1,
-        slug='example',
-        name='Example Project',
-        team=team,
-        organization=organization,
-    )
-
-    def truncate_to_day(datetime):
-        return datetime.replace(hour=0, minute=0, second=0, microsecond=0)
-
-    days = 7
-    end = truncate_to_day(datetime.now())
-    start = end - timedelta(days=days)
-
-    group_id_sequence = itertools.count(1)
-
-    def make_group_statistics():
-        users = random.randint(0, 2500) if random.random() < 0.8 else 0
-        count = int(users * max(1, random.paretovariate(2.2)))
-        if count < 1:
-            count = random.randint(0, 2500)
-        return {
-            'users': users,
-            'count': count,
-        }
-
-    def make_group_list(maximum):
-        for i in xrange(0, random.randint(0, maximum)):
-            yield Group(
-                id=id,
-                project=project,
-                message=make_message(random),
-                culprit=make_culprit(random),
-                level=random.choice(LOG_LEVELS.keys()),
-                status=random.choice((GroupStatus.RESOLVED, GroupStatus.UNRESOLVED)),
-            ), make_group_statistics()
-
-    group_lists = OrderedDict((
-        ('New Issues', make_group_list(5)),
-        ('Reintroduced Issues', make_group_list(5)),
-        ('Most Seen Overall', make_group_list(5)),
-    ))
-
-    def make_series_metric():
-        total = random.randint(0, 1e6)
-        return {
-            'resolved': int(total * random.random()),
-            'total': total,
-        }
-
-    series = OrderedDict([
-        (start + timedelta(days=i), make_series_metric()) for i in xrange(0, days)
-    ])
 
     return MailPreview(
         html_template='sentry/emails/weekly-report/body.html',
         text_template='sentry/emails/weekly-report/body.txt',
         context={
             'organization': organization,
-            'interval': {
-                'start': start,
-                'end': end,
-            },
-            'group_lists': group_lists,
-            'resolutions': {
-                'series': series,
-                'total_max': max(point['total'] for point in series.values()),
-                'comparisons': {
-                    'weekly': random.uniform(-2500, 2500),
-                    'monthly': random.uniform(-2500, 2500),
-                },
-            },
-            'personal': {
-                'resolutions': random.randint(0, 250),
-                'users': int(random.paretovariate(0.2)) if random.random() < 0.9 else 0,
-            },
+            'report': report,
+            'personal': user_statistics,
+            'instances': instances,
         },
     ).render()
 
