@@ -220,6 +220,7 @@ def prepare_project_issue_list(specification, queryset, start, end, rollup):
     )
 
 
+# TODO: Drop the period argument and ake this only for weekly reports.
 def prepare_project_report(project, end, period):
     # type: (Project, datetime, timedelta) -> Report
     queryset = project.group_set.exclude(status=GroupStatus.MUTED)
@@ -242,6 +243,7 @@ def prepare_project_report(project, end, period):
     series = prepare_project_series(project, queryset, start, end, rollup)
 
     # TODO: Load me from wherever the history data was stored above.
+    # TODO: Need to assert this is 7 * 4 (or less.)
     history = ResolutionHistory()
 
     return Report(
