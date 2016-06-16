@@ -111,8 +111,8 @@
                 <a href="{% absolute_uri project_link %}" class="issue-project">{{ group.project.name }}</a>
               </div>
             </td>
-            <td class="narrow-column">{{ item.statistics.events }}</td>
-            <td class="narrow-column">{{ item.statistics.users }}</td>
+            <td class="narrow-column">{{ item.statistics.events|small_count }}</td>
+            <td class="narrow-column">{{ item.statistics.users|small_count }}</td>
             <td class="narrow-column">
               {# TODO: Perhaps figure this out on the backend? #}
               {% if group.is_resolved %}
