@@ -62,8 +62,7 @@
       {% with report.statistics.history as history %}
       <td class="issues-resolved-column issues-resolved-column-middle">
         <div class="stat">
-          {% percent history.this_week|subtract:history.last_week history.last_week varname="change" %}
-          <!-- {{ history.this_week }} / {{ history.last_week }} -->
+          {% percent history.this_week_sum|subtract:history.last_week_sum history.last_week_sum varname="change" %}
           {% if change >= 0 %}
             <img src="{% absolute_asset_url 'sentry' 'images/email/arrow-increase.png' %}" width="20px" height="10px">
           {% else %}
@@ -75,8 +74,7 @@
       </td>
       <td class="issues-resolved-column">
         <div class="stat">
-          {% percent history.this_week|subtract:history.month_average history.month_average varname="change" %}
-          <!-- {{ history.this_week }} / {{ history.month_average }} -->
+          {% percent history.this_week_sum|subtract:history.month_average_week_sum history.month_average_week_sum varname="change" %}
           {% if change >= 0 %}
             <img src="{% absolute_asset_url 'sentry' 'images/email/arrow-increase.png' %}" width="20px" height="10px">
           {% else %}

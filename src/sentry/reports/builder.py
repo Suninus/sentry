@@ -4,6 +4,7 @@ import random
 from datetime import datetime, timedelta
 
 from typing import (
+    cast,
     Mapping,
     Optional,
     Tuple,
@@ -31,8 +32,8 @@ from sentry.reports.types import (
     IssueListScore,
     Report,
     ReportStatistics,
-    ResolutionHistory,
     ReportStatisticsItem,
+    ResolutionHistory,
     ScoredIssueList,
     ScoredIssueListItem,
     Timestamp,
@@ -107,14 +108,11 @@ def merge_reports(target, other):
                 left.total + right.total,
             )
 
-    def merge_scored_issue_lists(key, left, right):
-        # type: (str, ScoredIssueList, ScoredIssueList) -> ScoredIssueList
+    def merge_scored_issue_lists(specification, left, right):
+        # type: (IssueListSpecification, ScoredIssueList, ScoredIssueList) -> ScoredIssueList
         return ScoredIssueList(
             left.count + right.count,
-            sort_and_truncate_issues(
-                issue_list_specifications[key],
-                left.issues + right.issues,
-            ),
+            sort_and_truncate_issues(specification, left.issues + right.issues),
         )
 
     return Report(
@@ -125,14 +123,13 @@ def merge_reports(target, other):
                 target.statistics.series,
                 other.statistics.series,
             ),
-            ResolutionHistory(
-                # TODO: This needs to support ``None`` as a valid value.
-                this_week=target.statistics.history.this_week + other.statistics.history.this_week,
-                last_week=target.statistics.history.last_week + other.statistics.history.last_week,
-                month_average=target.statistics.history.month_average + other.statistics.history.month_average,
-            ),
+            ResolutionHistory(),
         ),
-        merge_mappings(merge_scored_issue_lists, target.issues, other.issues),
+        merge_mappings(
+            merge_scored_issue_lists,
+            target.issues,
+            other.issues,
+        ),
     )
 
 
@@ -245,15 +242,14 @@ def prepare_project_report(project, end, period):
     series = prepare_project_series(project, queryset, start, end, rollup)
 
     # TODO: Load me from wherever the history data was stored above.
-    history = ResolutionHistory(
-        this_week=None,
-        last_week=None,
-        month_average=None,
-    )
+    history = ResolutionHistory()
 
     return Report(
         Interval(start, end),
-        ReportStatistics(series, history),
+        ReportStatistics(
+            series,
+            history,
+        ),
         issue_lists,
     )
 

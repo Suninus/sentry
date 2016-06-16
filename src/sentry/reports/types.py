@@ -52,13 +52,18 @@ ReportStatisticsItem = NamedTuple('ReportStatisticsItem', [
     ('total', long),
 ])
 
-# TODO: This schema is sort of garbage, this should probably just be a list
-# containing four weeks of data.
-ResolutionHistory = NamedTuple('ResolutionHistory', [
-    ('this_week', int),
-    ('last_week', Optional[int]),
-    ('month_average', Optional[int]),
-])
+# TODO: This could probably be a generic Series fairly easily.
+# TODO: Double check all of this math, ... it's easy to get wrong.
+class ResolutionHistory(List[Tuple[Timestamp, long]]):
+    def this_week_sum(self):
+        return sum(value for (timestamp, value) in self[-7:])
+
+    def last_week_sum(self):
+        return sum(value for (timestamp, value) in self[-14:-7])
+
+    def month_average_week_sum(self):
+        return sum(value for (timestamp, value) in self) / 4
+
 
 BaseReportStatistics = NamedTuple('BaseReportStatistics', [
     ('series', List[

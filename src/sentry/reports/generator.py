@@ -25,10 +25,10 @@ from sentry.reports.types import (
     IssueStatistics,
     IssueReference,
     IssueListSpecification,
+    ResolutionHistory,
     Report,
     ReportStatistics,
     ReportStatisticsItem,
-    ResolutionHistory,
     ScoredIssueList,
     ScoredIssueListItem,
     Timestamp,
@@ -131,6 +131,18 @@ def generate_report(organization, random, days=7):
             total=total,
         )
 
+    def make_history_series():  # type: () -> ResolutionHistory
+        rollup = 60 * 60 * 24
+        resolution, timestamps = tsdb.get_optimal_rollup_series(
+            end - timedelta(days=7 * 4),
+            end,
+            rollup,
+        )
+        assert resolution == rollup
+        return ResolutionHistory(
+            [(timestamp, random.randint(0, 250)) for timestamp in timestamps]
+        )
+
     report = Report(
         Interval(start, end),
         statistics=ReportStatistics(
@@ -138,11 +150,7 @@ def generate_report(organization, random, days=7):
                 timestamp,
                 make_report_statistics_item(),
             ) for timestamp in timestamps],
-            history=ResolutionHistory(
-                this_week=random.randint(0, int(1e6)),
-                last_week=random.randint(0, int(1e6)),
-                month_average=random.randint(0, int(1e6)),
-            ),
+            history=make_history_series(),
         ),
         issues=issues,
     )
