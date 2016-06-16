@@ -156,7 +156,7 @@ def generate_report(organization, random, days=7):
     )
 
     user_statistics = UserStatistics(
-        resolved=random.randint(0, 250),
+        resolved=int(random.paretovariate(0.6)),
         users=int(random.paretovariate(0.2)) if random.random() < 0.9 else 0,
     )
 
