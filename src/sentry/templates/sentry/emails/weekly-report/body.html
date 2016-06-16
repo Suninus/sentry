@@ -141,7 +141,7 @@
       <td width="50%">
         <table>
           <tr>
-            <td class="user-impact-stat">{{ personal.resolved }}</td>
+            <td class="user-impact-stat">{{ personal.resolved|small_count:0 }}</td>
             <td class="user-impact-text">Issue{{ personal.resolved|pluralize }} resolved this week by you.</td>
           </tr>
         </table>
@@ -149,7 +149,7 @@
       <td width="50%">
         <table>
           <tr>
-            <td class="user-impact-stat">{{ personal.users }}</td>
+            <td class="user-impact-stat">{{ personal.users|small_count:0 }}</td>
             <td class="user-impact-text">User{{ personal.users|pluralize }} rejoicing because of it.</td>
           </tr>
         </table>
