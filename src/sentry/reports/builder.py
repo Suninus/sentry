@@ -44,8 +44,7 @@ from sentry.reports.utilities import (
 )
 
 
-def simple_score((issue, statistics)):
-    # type: (IssueListItem) -> IssueListScore
+def simple_score((issue, statistics)):  # type: (IssueListItem) -> IssueListScore
     return float(statistics.events)
 
 
